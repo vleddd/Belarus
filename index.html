@@ -423,7 +423,7 @@ const updates = [
       {
         text: "и ",
         city: "Червленно-Узловую",
-        coords: [46.33827209472657, 43.50784949957228],
+        coords: [45.97709655761719, 43.44768480268037],
         zoom: 12
       }
     ]
@@ -484,7 +484,7 @@ function processGeoJSON(geojson) {
       f.properties.customName = "Освобождено";
       f.properties.fillColor = "#5BC779";
     } else if (liberatedIds.includes(id)) {
-      f.properties.customName = "Освобождено";
+      f.properties.customName = "Под Контролем РФ";
       f.properties.fillColor = "#3498db";
     } else if (liberatedRus.includes(id)) {
       f.properties.customName = "Освобождено";
@@ -819,6 +819,7 @@ map.on('error', (e) => {
 </script>
 </body>
 </html>
+
 
 
 
