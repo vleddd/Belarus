@@ -382,7 +382,7 @@ const idToName = {
 const occupiedIds = [
 ];
   
-const liberatedIds = [
+const liberatedIds = ["0cbca80c-2842-4f8d-8b69-39cb393fdd5d",
                      ];
 
 const newLiberatedIds = [
@@ -393,7 +393,8 @@ const liberatedRus = [
 
 ];
   
-const availableDates = ["1996-12-11_07-00", 
+const availableDates = ["1996-12-11_07-00",
+                        "1996-12-11_10-00", 
                        ];
 
 const updates = [
@@ -408,7 +409,25 @@ const updates = [
         zoom: 12
       }
     ]
-  }
+  },
+  {
+    date: "11 Декабря 1996",
+    time: "10:00",
+    changes: [
+      {
+        text: "РФ отбили ",
+        city: "Станицу Щелковскую ",
+        coords: [46.33827209472657, 43.50784949957228],
+        zoom: 12
+      },
+      {
+        text: "и ",
+        city: "Червленно-Узловую",
+        coords: [46.33827209472657, 43.50784949957228],
+        zoom: 12
+      }
+    ]
+  },
 ];
 
 let currentIndex = availableDates.length - 1;
@@ -800,6 +819,7 @@ map.on('error', (e) => {
 </script>
 </body>
 </html>
+
 
 
 
