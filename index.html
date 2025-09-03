@@ -1,598 +1,802 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>DeepYouMap</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VoenPolMap</title>
   <script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet">
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
+  <link href="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.css" rel="stylesheet" />
   <style>
     body { margin: 0; padding: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    #controls {
+    #map { width: 100%; height: 100vh; }
+    
+    #date-container {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255,255,255,0.9);
-      padding: 10px 20px;
+      padding: 8px 16px;
       border-radius: 10px;
-      display: flex;
-      gap: 15px;
       z-index: 10;
       font-family: Arial;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      display: flex;
       align-items: center;
+      gap: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-    .date-button {
+    
+    #current-date {
       font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .nav-button {
+      font-size: 20px;
       cursor: pointer;
       background: none;
-      border: 1px solid #ddd;
-      padding: 5px 10px;
+      border: none;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 5px;
+      transition: background 0.2s;
     }
-    .date-button:hover {
-      background: rgba(0,0,0,0.05);
+    
+    .nav-button:hover {
+      background: rgba(0,0,0,0.1);
     }
-    #current-date {
-      font-size: 14px;
-      font-weight: bold;
-      min-width: 180px;
-      text-align: center;
-    }
-    #calendar-container {
+    
+    #left-controls {
       position: absolute;
       top: 10px;
-      right: 10px;
+      left: 10px;
       z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    #date-picker {
-      opacity: 0;
-      position: absolute;
-      width: 0;
-    }
-    .mapboxgl-popup-content {
-      border-radius: 5px;
-      padding: 15px;
-      font-family: Arial;
-    }
-    #compare-btn.active {
-      background: #f0f0f0;
+    
+    .control-button {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      border: none;
+      font-size: 18px;
       font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+    
+    .control-button:hover {
+      transform: scale(1.1);
+    }
+    
+    #notifications-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      background: white;
+      border-radius: 15px;
+      z-index: 100;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      border: 2px solid #ddd;
+    }
+    
+    #notifications-header {
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 1px solid #eee;
+      background: #f8f8f8;
+      text-align: center;
+    }
+    
+    #notifications-content {
+      padding: 15px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    
+    .update-container {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 0;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+    
+    .update-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 15px;
+      background: #f0f0f0;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .update-date {
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .update-time {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .update-text {
+      padding: 12px 15px;
+      line-height: 1.5;
+    }
+    
+    .city-link {
+      color: #1a73e8;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.2s;
+    }
+    
+    .city-link:hover {
+      color: #0d5bba;
+      text-decoration: underline;
+    }
+    
+    #close-notifications {
+      padding: 12px;
+      background: #f8f8f8;
+      border-top: 1px solid #eee;
+      text-align: center;
+      cursor: pointer;
+      color: #1a73e8;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    
+    #close-notifications:hover {
+      background: #f0f0f0;
+    }
+    
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+      display: none;
+    }
+    
+    /* Стили для панели настроек */
+    #settings-panel {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 400px;
+      background: white;
+      border-radius: 15px;
+      z-index: 100;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      border: 2px solid #ddd;
+    }
+    
+    #settings-header {
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border-bottom: 1px solid #eee;
+      background: #f8f8f8;
+      text-align: center;
+    }
+    
+    #settings-content {
+      padding: 20px;
+    }
+    
+    .map-style-option {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .map-style-option:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .map-style-option.selected {
+      background-color: #e3f2fd;
+      border-color: #1a73e8;
+    }
+    
+    .style-radio {
+      margin-right: 12px;
+    }
+    
+    .style-info {
+      flex-grow: 1;
+    }
+    
+    .style-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .style-description {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    #close-settings {
+      padding: 12px;
+      background: #f8f8f8;
+      border-top: 1px solid #eee;
+      text-align: center;
+      cursor: pointer;
+      color: #1a73e8;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    
+    #close-settings:hover {
+      background: #f0f0f0;
+    }
+    
+    @media (max-width: 768px) {
+      #date-container {
+        top: auto;
+        bottom: 20px;
+        width: auto;
+      }
+      
+      #left-controls {
+        top: 15px;
+        left: auto;
+        right: 15px;
+        flex-direction: row;
+      }
+      
+      .control-button {
+        width: 40px;
+        height: 40px;
+      }
+      
+      #notifications-panel,
+      #settings-panel {
+        width: 95%;
+      }
+      
+      .update-header {
+        flex-direction: column;
+        gap: 5px;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <div id="controls">
-    <button class="date-button" id="prev-btn">&lt; Назад</button>
-    <span id="current-date"></span>
-    <button class="date-button" id="next-btn">Вперед &gt;</button>
-    <button class="date-button" id="compare-btn">Сравнить</button>
-  </div>
+<div id="date-container">
+  <button class="nav-button" id="prev-btn">&lt;</button>
+  <span id="current-date">20.05.2025</span>
+  <button class="nav-button" id="next-btn">&gt;</button>
+  <button class="nav-button" id="compare-btn">&gt;&lt;</button>
+</div>
 
-  <div id="calendar-container">
-    <button id="open-calendar" class="date-button">📅 Выбрать дату</button>
-    <input id="date-picker" type="text">
+<div id="left-controls">
+  <button id="settings-btn" class="control-button" title="Настройки">⚙️</button>
+  <button id="info-btn" class="control-button" title="Информация">i</button>
+  <button id="notifications-btn" class="control-button" title="Обновления">🔔</button>
+  <button id="tg-channel-btn" class="control-button" title="Telegram-канал">📢</button>
+</div>
+
+<div class="overlay" id="notifications-overlay"></div>
+<div id="notifications-panel">
+  <div id="notifications-header">Обновление карты</div>
+  <div id="notifications-content"></div>
+  <div id="close-notifications">Закрыть</div>
+</div>
+
+<div class="overlay" id="settings-overlay"></div>
+<div id="settings-panel">
+  <div id="settings-header">Настройки карты</div>
+  <div id="settings-content">
+    <div class="map-style-option selected" data-style="basic">
+      <input type="radio" name="map-style" class="style-radio" checked>
+      <div class="style-info">
+        <div class="style-name">Базовая карта</div>
+        <div class="style-description">Стандартная карта с цветовым кодированием территорий</div>
+      </div>
+    </div>
+    
+    <div class="map-style-option" data-style="topographic">
+      <input type="radio" name="map-style" class="style-radio">
+      <div class="style-info">
+        <div class="style-name">Топографическая</div>
+        <div class="style-description">Карта с отображением рельефа и высот</div>
+      </div>
+    </div>
+    
+    <div class="map-style-option" data-style="satellite">
+      <input type="radio" name="map-style" class="style-radio">
+      <div class="style-info">
+        <div class="style-name">Спутниковая</div>
+        <div class="style-description">Спутниковые снимки местности</div>
+      </div>
+    </div>
   </div>
+  <div id="close-settings">Закрыть</div>
+</div>
+
+<div id="map"></div>
 
 <script>
-// Конфигурация
-const MAP_STYLE = 'https://api.maptiler.com/maps/streets/style.json?key=A7YSMrQ3OZ0oStEWILkD';
-const GEOJSON_BASE_URL = 'https://vleddd.github.io/DeepYouMap/maps/';
-
-// Цвета
-const COLORS = {
-  OCCUPIED: '#8B0000', // Темно-красный
-  LIBERATED: '#1E90FF', // Синий доджер
-  SPECIAL: '#9370DB', // Средний пурпурный
-  UNKNOWN: '#A9A9A9', // Темно-серый
-  OCCUPIED_CHANGE: '#FF4500', // Оранжево-красный
-  LIBERATED_CHANGE: '#32CD32', // Лаймовый
-  BASE_OPACITY: 0.4,
-  COMPARE_OPACITY: 0.2,
-  CHANGE_OPACITY: 0.6
-};
-
 // Инициализация карты
 const map = new maplibregl.Map({
   container: 'map',
-  style: MAP_STYLE,
+  style: 'https://api.maptiler.com/maps/01966ded-9a2b-7a36-bad5-71bc7e8b2bf7/style.json?key=A7YSMrQ3OZ0oStEWILkD',
   center: [31.1656, 48.3794],
-  zoom: 6
+  zoom: 6,
+  touchZoomRotate: true,
+  interactive: true
 });
 
-// Данные (сокращенные списки для примера)
-const SPECIAL_REGIONS = {
-  "80c27733-0eea-4845-93f5-e8938d4a79b3": "Крым",
-  "5cdb851b-4447-41b6-ae6f-a134e8b00236": "ЛДНР"
+// Определение стилей карты
+const mapStyles = {
+  basic: 'https://api.maptiler.com/maps/01966ded-9a2b-7a36-bad5-71bc7e8b2bf7/style.json?key=A7YSMrQ3OZ0oStEWILkD',
+  topographic: 'https://api.maptiler.com/maps/outdoor/style.json?key=A7YSMrQ3OZ0oStEWILkD',
+  satellite: 'https://api.maptiler.com/maps/hybrid/style.json?key=A7YSMrQ3OZ0oStEWILkD'
 };
 
-const OCCUPIED_IDS = [
-  "2228d511-c4fe-488a-a4b6-19e8f8163b01",
-  "c94f60ce-f725-41fd-9fee-59d528f59a2a",
-  "c682ae45-c0f3-4966-ac2e-7d53534ab54a",
-  "18ed4fb6-c145-478f-baee-efa28b2601a5",
-  "2e1aacf8-b288-4067-8373-a6afecc8debe",
-  "4a635846-b315-4ef6-ba1e-728b5eb76d98",
-  "5885a5c6-9b23-4e22-8e42-d1edf8f3b301",
-  "c8b24166-6bee-480d-ab52-e5fcfbc9e28b",
-  "a62ed399-6dab-4593-a845-2eea4c20d798",
-  "14f624ef-2e2d-4f1a-9c2a-32e252fdbfeb",
-  "2cdb7a21-da5a-4393-8972-91c4b30739a4",
-  "64ce2e6f-00fc-4193-a4e9-6a76b2a03021",
-  "38be1fbf-fcb2-422e-a4e5-96010a2dc6e2",
-  "bb33f55a-d29e-4481-ba04-80df46de0115",
-  "22b8b8e8-394b-4625-b388-19cbdd597de5",
-  "62147c99-fe66-40f2-b4df-34621ed6d853",
-  "a74cd8d9-0994-4fab-82e7-14146f3a5d9a",
-  "470acd07-1405-496e-87f4-314f0f3b1ef2",
-  "5bf99d3e-af7a-460e-a9e8-5965c7e86959",
-  "1d234475-4fd9-466b-9f69-4e59e02ba756",
-  "c7bf8dae-1b72-48f4-aa51-d62e31f32268",
-  "7a7efc17-c569-46e0-8ad9-3acea3152f2e",
-  "747b8f95-8c3d-40b3-a806-a2a3ea96f78f",
-  "17e912ab-8e25-4bc9-b8f3-762bbd51e091",
-  "0a91537d-3b08-4008-a84d-5e1187fcbefb",
-  "6ee17f5e-4f2e-4cac-9d68-a669a35b556b",
-  "6dc44775-c39f-4928-acb5-c194397d07c8",
-  "3e3812f1-6b76-4599-8877-7eee51b14dd8",
-  "31caf44b-632b-476a-8bf0-93bf9d45e9e8",
-  "62cd1f77-9467-459a-a489-39fd03034cac",
-  "1bea946c-d720-4842-bb4f-3c1576f9a3ec",
-  "e7756804-6807-44a9-8110-c6ab01dda52a",
-  "ffe28d26-b43a-4d92-8ffc-b1f8c4f182a5",
-  "58d29447-7594-4c49-aac3-97efb86538e8"
-];
-
-const LIBERATED_IDS = [
-  "26fd7b89-afba-437a-80b0-36be3856c0a2",
-  "c3527e63-cca7-49bb-bc17-13bbf6f6ba9b",
-  "67987403-7883-42dc-9d1d-67c07201c4a1",
-  "05c73b06-5cdb-4682-8bdc-addbcc7ea942",
-  "7b53cfba-7daf-46e4-acf9-d7887238d7f3",
-  "223f7858-a5e8-48a5-ab37-f6d5d1730c72",
-  "a1afe8fc-ab63-4f99-bd83-3e286ec5475f",
-  "622e8f29-dbbd-4a82-9a9d-4a44bfc18508",
-  "95ac0eb8-a43c-4801-b770-cef34cded718",
-  "643d318e-d5fc-456d-93fb-dd9d7cecdbd0",
-  "b61529b0-4440-48cb-a52d-4f5a5b61965b",
-  "93408d72-d078-4b1b-ab6a-43fd27cf5217",
-  "3d029f3c-2386-4669-b25e-63e095fa41a0",
-  "3459c1b1-1886-4716-ba80-ee3d723a2391",
-  "c5b0a0cb-3b25-4fc8-a31f-716bc5f2ddc2",
-  "bd0b2d90-7876-44b2-9fa4-a88bac1470dd",
-  "0d093787-50b9-44c0-89bf-8a37159a2e3a",
-  "35933dc0-526f-47b8-b8c4-ca3c2b86eed0",
-  "596d237b-364c-4ae0-8e1e-5440dd5c2743",
-  "418a53e5-49e1-4ba5-b451-c0e4f733d734",
-  "b9182566-adc0-486e-8a13-7d2683b547ac",
-  "5c1f5c96-f7b0-496a-b9af-96a3cd67582c"
-];
-
-const DATE_SWITCHES = {
-  "6dc44775-c39f-4928-acb5-c194397d07c8": "2022-03-29_14-00",
-  /*...*/
+// Данные полигонов
+const idToName = {
+  "72dca429-0108-4676-b20e-f1f7ab55b46a": "Чеченская Республика"
 };
 
-const AVAILABLE_DATES = [
-  "2022-02-23_00-00",
-  "2022-02-24_04-00",
-  "2022-02-24_09-00",
-  "2022-02-24_13-00",
-  "2022-02-24_19-00",
-  "2022-02-24_23-00",
-  "2022-02-25_10-00",
-  "2022-02-25_15-00",
-  "2022-02-25_23-00",
-  "2022-02-26_10-00",
-  "2022-02-27_10-00",
-  "2022-02-28_12-00",
-  "2022-02-28_14-00",
-  "2022-03-01_14-00",
-  "2022-03-04_23-00",
-  "2022-03-05_12-00",
-  "2022-03-06_17-00",
-  "2022-03-11_12-00",
-  "2022-03-22_12-00",
-  "2022-03-29_14-00",
-  "2022-03-29_16-30",
-  "2022-03-29_19-00",
-  "2022-03-30_17-00",
-  "2022-04-03_18-00",
-  "2022-04-08_15-00",
-  "2022-04-12_17-00",
-  "2022-04-20_14-00",
-  "2022-04-21_15-00",
-  "2022-04-23_16-00",
-  "2022-04-24_20-09",
-  "2022-04-25_20-49",
-  "2022-04-26_23-58",
-  "2022-04-27_23-59",
-  "2022-04-28_19-30",
-  "2022-04-29_20-30",
-  "2022-04-30_21-30",
-  "2022-05-01_22-30",
-  "2022-05-03_18-30",
-  "2022-05-05_17-30",
-  "2022-05-05_22-35",
-  "2022-05-06_23-40",
-  "2022-05-07_19-40",
-  "2022-05-08_20-43",
-  "2022-05-09_21-45",
-  "2022-05-10_15-41",
-  "2022-05-10_18-24",
-  "2022-05-10_20-54",
-  "2022-05-11_20-05",
-  "2022-05-13_03-15",
-  "2022-05-13_12-43",
-  "2022-05-15_19-14",
-  "2022-05-16_12-20",
-  "2022-05-16_13-24",
-  "2022-05-17_10-41",
-  "2022-05-17_12-05",
-  "2022-05-18_12-24",
-  "2022-05-18_19-04",
-  "2022-05-19_17-50",
-  "2022-05-21_12-54",
-  "2022-05-21_22-55",
-  "2022-05-22_21-32",
-  "2022-05-23_03-01",
-  "2022-05-23_11-50",
-  "2022-05-23_12-47",
-  "2022-05-23_20-12",
-  "2022-05-24_10-53",
-  "2022-05-25_12-02",
-  "2022-05-25_20-23"
+const occupiedIds = [
+];
+  
+const liberatedIds = [
+                     ];
+
+const newLiberatedIds = [
+  
 ];
 
-// Состояние
-let currentDateIndex = AVAILABLE_DATES.length - 1;
-let currentGeoJson = null;
-let previousGeoJson = null;
-let compareMode = false;
+const liberatedRus = [
 
-// Основные функции
+];
+  
+const availableDates = ["11.12.1996_07-00", 
+                       ];
+
+const updates = [
+  {
+    date: "11 Декабря 1996",
+    time: "07:00",
+    changes: [
+      {
+        text: "РФ начало наступление на Чеченскую Республику ",
+        city: "",
+        coords: [37.33702262937965, 48.322925603004705],
+        zoom: 12
+      },
+  }
+];
+
+let currentIndex = availableDates.length - 1;
+let currentGeojson = null;
+let previousDateGeojson = null;
+let compareActive = false;
+let currentMapStyle = 'basic';
+
 function formatArea(area) {
-  return (area / 1000000).toFixed(2) + ' км²';
+  return (area / 1e6).toFixed(2) + ' км²';
 }
 
-async function loadGeoJson(date) {
+async function loadMap(dateStr, isPrevious = false) {
+  const url = `https://vleddd.github.io/DeepMap/maps/map_${dateStr}.geojson`;
+  
   try {
-    const response = await fetch(`${GEOJSON_BASE_URL}map_${date}.geojson`);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Ошибка загрузки GeoJSON:', error);
-    alert('Не удалось загрузить данные для выбранной даты');
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn("Файл данных не найден");
+        return null;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const geojson = await response.json();
+    
+    if (isPrevious) {
+      return geojson;
+    } else {
+      processGeoJSON(geojson);
+      return geojson;
+    }
+    
+  } catch (err) {
+    console.warn("Ошибка загрузки GeoJSON:", err.message);
     return null;
   }
 }
 
-function processFeature(feature, currentDate) {
-  const featureId = feature.id;
-  feature.properties = feature.properties || {};
-  
-  // Особые регионы
-  if (SPECIAL_REGIONS[featureId]) {
-    feature.properties.zoneName = SPECIAL_REGIONS[featureId];
-    feature.properties.zoneColor = COLORS.SPECIAL;
-    feature.properties.isSpecial = true;
-    return;
-  }
-  
-  // Регионы с изменяемым статусом
-  if (DATE_SWITCHES[featureId]) {
-    const switchDate = DATE_SWITCHES[featureId];
-    const currentDateIndex = AVAILABLE_DATES.indexOf(currentDate);
-    const switchDateIndex = AVAILABLE_DATES.indexOf(switchDate);
-    
-    if (currentDateIndex >= switchDateIndex) {
-      feature.properties.zoneName = "Освобождено";
-      feature.properties.zoneColor = COLORS.LIBERATED;
+function processGeoJSON(geojson) {
+  currentGeojson = geojson;
+
+  geojson.features.forEach(f => {
+    const id = f.id || f.properties.id;
+    if (idToName[id]) {
+      f.properties.customName = idToName[id];
+      f.properties.fillColor = "#b57edc";
+    } else if (occupiedIds.includes(id)) {
+      f.properties.customName = "Оккупировано";
+      f.properties.fillColor = "#d22b2b";
+    } else if (newLiberatedIds.includes(id)) {
+      f.properties.customName = "Освобождено";
+      f.properties.fillColor = "#5BC779";
+    } else if (liberatedIds.includes(id)) {
+      f.properties.customName = "Освобождено";
+      f.properties.fillColor = "#3498db";
+    } else if (liberatedRus.includes(id)) {
+      f.properties.customName = "Освобождено";
+      f.properties.fillColor = "#1637CC";
     } else {
-      feature.properties.zoneName = "Оккупировано";
-      feature.properties.zoneColor = COLORS.OCCUPIED;
+      f.properties.customName = "Под Вопросом";
+      f.properties.fillColor = "#777";
     }
-    return;
-  }
-  
-  // Оккупированные регионы
-  if (OCCUPIED_IDS.includes(featureId)) {
-    feature.properties.zoneName = "Оккупировано";
-    feature.properties.zoneColor = COLORS.OCCUPIED;
-    return;
-  }
-  
-  // Освобожденные регионы
-  if (LIBERATED_IDS.includes(featureId)) {
-    feature.properties.zoneName = "Освобождено";
-    feature.properties.zoneColor = COLORS.LIBERATED;
-    return;
-  }
-  
-  // По умолчанию
-  feature.properties.zoneName = "Неизвестно";
-  feature.properties.zoneColor = COLORS.UNKNOWN;
-  feature.properties.isUnknown = true;
-}
-
-function processGeoJson(geoJson, currentDate) {
-  if (!geoJson || !geoJson.features) return;
-  
-  geoJson.features.forEach(feature => {
-    processFeature(feature, currentDate);
-    
-    // Расчет площади
-    try {
-      feature.properties.area = formatArea(turf.area(feature));
-    } catch (e) {
-      console.warn('Ошибка расчета площади:', e);
-      feature.properties.area = 'неизвестна';
-    }
+    f.properties.areaFormatted = formatArea(turf.area(f));
   });
+
+  updateMapSource(geojson);
 }
 
-function updateMapLayers() {
-  // Удаляем старые слои
-  if (map.getLayer('zones-layer')) map.removeLayer('zones-layer');
-  if (map.getLayer('changes-layer')) map.removeLayer('changes-layer');
-  if (map.getSource('changes-source')) map.removeSource('changes-source');
-  
-  // Основной слой
-  if (map.getSource('zones-source')) {
-    map.getSource('zones-source').setData(currentGeoJson);
+function updateMapSource(geojson) {
+  if (map.getSource('war-zones')) {
+    map.getSource('war-zones').setData(geojson);
   } else {
-    map.addSource('zones-source', { type: 'geojson', data: currentGeoJson });
-  }
-  
-  // Настройка прозрачности в зависимости от режима
-  const opacity = compareMode ? COLORS.COMPARE_OPACITY : COLORS.BASE_OPACITY;
-  
-  map.addLayer({
-    id: 'zones-layer',
-    type: 'fill',
-    source: 'zones-source',
-    paint: {
-      'fill-color': ['get', 'zoneColor'],
-      'fill-opacity': [
-        'case',
-        ['==', ['get', 'isUnknown'], true], 0, // Скрываем серые зоны
-        ['==', ['get', 'isSpecial'], true], opacity, // Особые зоны
-        opacity // Все остальные
-      ],
-      'fill-outline-color': '#000',
-      'fill-pattern': compareMode ? null : [
-        'case',
-        ['==', ['get', 'zoneColor'], COLORS.OCCUPIED], 'occupation-stripe',
-        ['==', ['get', 'zoneColor'], COLORS.LIBERATED], 'liberation-stripe',
-        null
-      ]
-    }
-  });
-
-  // Добавляем штриховку для режима сравнения
-  if (!compareMode) {
-    // Добавляем шаблоны штриховки
+    map.addSource('war-zones', { type: 'geojson', data: geojson });
     map.addLayer({
-      id: 'hatching-layer',
+      id: 'war-polygons',
       type: 'fill',
-      source: 'zones-source',
+      source: 'war-zones',
       paint: {
-        'fill-pattern': [
-          'case',
-          ['==', ['get', 'zoneColor'], COLORS.OCCUPIED], 'occupation-stripe',
-          ['==', ['get', 'zoneColor'], COLORS.LIBERATED], 'liberation-stripe',
-          null
-        ],
-        'fill-opacity': 0.7
+        'fill-color': ['get', 'fillColor'],
+        'fill-opacity': 0.5
       }
     });
+
+    map.addLayer({
+      id: 'war-outlines',
+      type: 'line',
+      source: 'war-zones',
+      paint: {
+        'line-color': ['get', 'fillColor'],
+        'line-width': 1
+      }
+    });
+
+    map.on('click', 'war-polygons', (e) => {
+      const f = e.features[0];
+      new maplibregl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(`<h3>${f.properties.customName}</h3><p>Площадь: ${f.properties.areaFormatted}</p>`)
+        .addTo(map);
+    });
+  }
+}
+
+async function loadCurrentDate() {
+  const dateStr = availableDates[currentIndex];
+  document.getElementById('current-date').textContent = dateStr.split('_')[0];
+  
+  if (currentIndex > 0) {
+    const prevDateStr = availableDates[currentIndex - 1];
+    previousDateGeojson = await loadMap(prevDateStr, true);
+  } else {
+    previousDateGeojson = null;
   }
   
-  // Слой изменений (только в режиме сравнения)
-  if (compareMode && previousGeoJson) {
-    const changes = calculateChanges();
-    if (changes.features.length > 0) {
-      map.addSource('changes-source', { type: 'geojson', data: changes });
-      map.addLayer({
-        id: 'changes-layer',
-        type: 'fill',
-        source: 'changes-source',
-        paint: {
-          'fill-color': ['get', 'changeColor'],
-          'fill-opacity': COLORS.CHANGE_OPACITY,
-          'fill-outline-color': '#000'
-        }
-      });
+  await loadMap(dateStr);
+}
+
+function toggleCompare() {
+  compareActive = !compareActive;
+  
+  if (compareActive && previousDateGeojson && currentGeojson) {
+    showComparison();
+  } else {
+    removeComparisonLayers();
+  }
+}
+
+function removeComparisonLayers() {
+  ['change-fill', 'change-outline'].forEach(id => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  if (map.getSource('changes')) map.removeSource('changes');
+}
+
+function showComparison() {
+  removeComparisonLayers();
+  
+  const changes = calculateChanges();
+  
+  if (!changes || changes.length === 0) {
+    console.log("Нет изменений для отображения");
+    return;
+  }
+
+  map.addSource('changes', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: changes }
+  });
+
+  map.addLayer({
+    id: 'change-fill',
+    type: 'fill',
+    source: 'changes',
+    paint: {
+      'fill-color': ['get', 'fillColor'],
+      'fill-opacity': 0.7
     }
-  }
-  
-  setupEventHandlers();
+  });
+
+  map.addLayer({
+    id: 'change-outline',
+    type: 'line',
+    source: 'changes',
+    paint: {
+      'line-color': ['get', 'fillColor'],
+      'line-width': 2,
+      'line-dasharray': [2, 2]
+    }
+  });
 }
 
 function calculateChanges() {
-  const changes = {
-    type: 'FeatureCollection',
-    features: []
-  };
+  if (!previousDateGeojson || !currentGeojson) return [];
 
-  if (!previousGeoJson || !currentGeoJson) return changes;
-
-  const prevFeatures = {};
-  previousGeoJson.features.forEach(f => { 
-    if (!f.properties.isUnknown) { // Игнорируем серые зоны
-      prevFeatures[f.id] = f;
-    }
+  const prevFeaturesMap = {};
+  previousDateGeojson.features.forEach(f => {
+    const id = f.id || f.properties.id;
+    prevFeaturesMap[id] = turf.cleanCoords(f);
+  });
+  
+  const currFeaturesMap = {};
+  currentGeojson.features.forEach(f => {
+    const id = f.id || f.properties.id;
+    currFeaturesMap[id] = turf.cleanCoords(f);
   });
 
-  currentGeoJson.features.forEach(currentFeature => {
-    // Игнорируем серые зоны и особые регионы
-    if (currentFeature.properties.isUnknown || currentFeature.properties.isSpecial) return;
-    
-    const prevFeature = prevFeatures[currentFeature.id];
-    if (!prevFeature) return;
+  const changes = [];
 
-    try {
-      const diff = turf.difference(currentFeature, prevFeature);
-      if (diff) {
-        const isLiberated = currentFeature.properties.zoneColor === COLORS.LIBERATED;
-        changes.features.push({
-          ...diff,
-          properties: {
-            ...currentFeature.properties,
-            changeColor: isLiberated ? COLORS.LIBERATED_CHANGE : COLORS.OCCUPIED_CHANGE
-          }
-        });
+  const allIds = [...occupiedIds, ...liberatedIds, ...newLiberatedIds, ...liberatedRus];
+  
+  for (const id of allIds) {
+    if (currFeaturesMap[id] && prevFeaturesMap[id]) {
+      try {
+        const diff = turf.difference(currFeaturesMap[id], prevFeaturesMap[id]);
+        if (diff) {
+          changes.push({
+            ...currFeaturesMap[id],
+            geometry: diff.geometry,
+            properties: {
+              ...currFeaturesMap[id].properties,
+              fillColor: currFeaturesMap[id].properties.fillColor,
+              customName: `Изменение (${currFeaturesMap[id].properties.customName})`
+            }
+          });
+        }
+      } catch (e) {
+        console.error(`Ошибка сравнения полигона ${id}:`, e);
       }
-    } catch (e) {
-      console.warn('Ошибка сравнения:', e);
     }
-  });
+  }
 
   return changes;
 }
 
-function setupEventHandlers() {
-  map.off('click', 'zones-layer');
-  map.off('mouseenter', 'zones-layer');
-  map.off('mouseleave', 'zones-layer');
+function renderUpdates() {
+  const content = document.getElementById('notifications-content');
+  content.innerHTML = '';
 
-  map.on('click', 'zones-layer', (e) => {
-    if (e.features[0].properties.isUnknown) return;
+  const groupedUpdates = {};
+  updates.forEach(update => {
+    const key = `${update.date}_${update.time}`;
+    if (!groupedUpdates[key]) {
+      groupedUpdates[key] = {
+        date: update.date,
+        time: update.time,
+        changes: []
+      };
+    }
+    groupedUpdates[key].changes.push(...update.changes);
+  });
+
+  Object.values(groupedUpdates).forEach(group => {
+    const updateContainer = document.createElement('div');
+    updateContainer.className = 'update-container';
     
-    new maplibregl.Popup()
-      .setLngLat(e.lngLat)
-      .setHTML(`
-        <h3>${e.features[0].properties.zoneName}</h3>
-        <p>Площадь: ${e.features[0].properties.area}</p>
-      `)
-      .addTo(map);
-  });
-
-  map.on('mouseenter', 'zones-layer', () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-
-  map.on('mouseleave', 'zones-layer', () => {
-    map.getCanvas().style.cursor = '';
+    const header = document.createElement('div');
+    header.className = 'update-header';
+    
+    const dateElement = document.createElement('div');
+    dateElement.className = 'update-date';
+    dateElement.textContent = group.date;
+    
+    const timeElement = document.createElement('div');
+    timeElement.className = 'update-time';
+    timeElement.textContent = group.time;
+    
+    header.appendChild(dateElement);
+    header.appendChild(timeElement);
+    updateContainer.appendChild(header);
+    
+    const textContainer = document.createElement('div');
+    textContainer.className = 'update-text';
+    
+    group.changes.forEach(change => {
+      const textNode = document.createTextNode(change.text);
+      textContainer.appendChild(textNode);
+      
+      const cityLink = document.createElement('span');
+      cityLink.className = 'city-link';
+      cityLink.textContent = change.city;
+      
+      cityLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        map.flyTo({
+          center: change.coords,
+          zoom: change.zoom || 11,
+          essential: true
+        });
+        toggleNotifications();
+      });
+      
+      textContainer.appendChild(cityLink);
+    });
+    
+    updateContainer.appendChild(textContainer);
+    content.appendChild(updateContainer);
   });
 }
 
-async function loadCurrentDate() {
-  const currentDate = AVAILABLE_DATES[currentDateIndex];
-  document.getElementById('current-date').textContent = formatDateForDisplay(currentDate);
-
-  const geoJson = await loadGeoJson(currentDate);
-  if (!geoJson) return;
-
-  previousGeoJson = currentGeoJson;
-  currentGeoJson = geoJson;
+function toggleNotifications() {
+  const panel = document.getElementById('notifications-panel');
+  const overlay = document.getElementById('notifications-overlay');
   
-  processGeoJson(currentGeoJson, currentDate);
-  updateMapLayers();
+  if (panel.style.display === 'flex') {
+    panel.style.display = 'none';
+    overlay.style.display = 'none';
+  } else {
+    renderUpdates();
+    panel.style.display = 'flex';
+    overlay.style.display = 'block';
+  }
 }
 
-function formatDateForDisplay(dateStr) {
-  const [date, time] = dateStr.split('_');
-  return `${date} ${time.replace('-', ':')}`;
+function toggleSettings() {
+  const panel = document.getElementById('settings-panel');
+  const overlay = document.getElementById('settings-overlay');
+  
+  if (panel.style.display === 'flex') {
+    panel.style.display = 'none';
+    overlay.style.display = 'none';
+  } else {
+    panel.style.display = 'flex';
+    overlay.style.display = 'block';
+  }
 }
 
-// Инициализация интерфейса
-function initUI() {
-  // Кнопки навигации
-  document.getElementById('prev-btn').addEventListener('click', () => {
-    if (currentDateIndex > 0) {
-      currentDateIndex--;
-      loadCurrentDate();
-    }
-  });
-
-  document.getElementById('next-btn').addEventListener('click', () => {
-    if (currentDateIndex < AVAILABLE_DATES.length - 1) {
-      currentDateIndex++;
-      loadCurrentDate();
-    }
-  });
-
-  // Кнопка сравнения
-  document.getElementById('compare-btn').addEventListener('click', toggleCompareMode);
-
-  // Календарь
-  const datePicker = flatpickr("#date-picker", {
-    enable: AVAILABLE_DATES.map(d => {
-      const [date, time] = d.split('_');
-      return `${date} ${time.replace('-', ':')}`;
-    }),
-    dateFormat: "Y-m-d H:i",
-    onChange: function(selectedDates, dateStr) {
-      const formatted = dateStr.replace(' ', '_').replace(':', '-');
-      const foundIndex = AVAILABLE_DATES.findIndex(d => d.startsWith(formatted));
-      if (foundIndex >= 0) {
-        currentDateIndex = foundIndex;
-        loadCurrentDate();
+function changeMapStyle(style) {
+  if (mapStyles[style] && currentMapStyle !== style) {
+    map.setStyle(mapStyles[style]);
+    currentMapStyle = style;
+    
+    // После смены стиля нужно заново добавить наши слои
+    map.once('styledata', () => {
+      if (currentGeojson) {
+        updateMapSource(currentGeojson);
       }
-    }
-  });
-
-  document.getElementById('open-calendar').addEventListener('click', () => {
-    datePicker.open();
-  });
+      if (compareActive) {
+        showComparison();
+      }
+    });
+  }
 }
 
-function toggleCompareMode() {
-  if (!previousGeoJson) {
-    alert("Нет данных для сравнения");
+function openTgChannel() {
+  window.open('https://t.me/Voenpole', '_blank');
+}
+
+// Инициализация
+document.getElementById('prev-btn').addEventListener('click', async () => {
+  if (currentIndex > 0) {
+    currentIndex--;
+    await loadCurrentDate();
+  }
+});
+
+document.getElementById('next-btn').addEventListener('click', async () => {
+  if (currentIndex < availableDates.length - 1) {
+    currentIndex++;
+    await loadCurrentDate();
+  }
+});
+
+document.getElementById('compare-btn').addEventListener('click', toggleCompare);
+document.getElementById('settings-btn').addEventListener('click', toggleSettings);
+document.getElementById('notifications-btn').addEventListener('click', toggleNotifications);
+document.getElementById('tg-channel-btn').addEventListener('click', openTgChannel);
+document.getElementById('close-notifications').addEventListener('click', toggleNotifications);
+document.getElementById('notifications-overlay').addEventListener('click', toggleNotifications);
+document.getElementById('close-settings').addEventListener('click', toggleSettings);
+document.getElementById('settings-overlay').addEventListener('click', toggleSettings);
+
+// Обработчики выбора стиля карта
+document.querySelectorAll('.map-style-option').forEach(option => {
+  option.addEventListener('click', () => {
+    // Снимаем выделение со всех вариантов
+    document.querySelectorAll('.map-style-option').forEach(opt => {
+      opt.classList.remove('selected');
+      opt.querySelector('.style-radio').checked = false;
+    });
+    
+    // Выделяем выбранный вариант
+    option.classList.add('selected');
+    option.querySelector('.style-radio').checked = true;
+    
+    // Меняем стиль карты
+    const style = option.getAttribute('data-style');
+    changeMapStyle(style);
+  });
+});
+
+map.on('load', async () => {
+  await loadCurrentDate();
+  // Убрали добавление элементов управления навигацией
+  map.addControl(new maplibregl.ScaleControl({
+    maxWidth: 100,
+    unit: 'metric'
+  }));
+});
+
+map.on('error', (e) => {
+  if (e.error && e.error.message.includes('Style is not done loading')) {
     return;
   }
-  compareMode = !compareMode;
-  const btn = document.getElementById('compare-btn');
-  btn.classList.toggle('active', compareMode);
-  updateMapLayers();
-}
-
-// Запуск приложения
-map.on('load', () => {
-  // Добавляем шаблоны штриховки
-  map.addImage('occupation-stripe', {
-    width: 8,
-    height: 8,
-    data: new Uint8Array([
-      255,255,255,255, 0,0,0,0,
-      255,255,255,255, 0,0,0,0,
-      255,255,255,255, 0,0,0,0,
-      255,255,255,255, 0,0,0,0,
-      0,0,0,0, 255,255,255,255,
-      0,0,0,0, 255,255,255,255,
-      0,0,0,0, 255,255,255,255,
-      0,0,0,0, 255,255,255,255
-    ])
-  });
-  
-  map.addImage('liberation-stripe', {
-    width: 8,
-    height: 8,
-    data: new Uint8Array([
-      255,255,255,255, 255,255,255,255,
-      0,0,0,0, 0,0,0,0,
-      255,255,255,255, 255,255,255,255,
-      0,0,0,0, 0,0,0,0,
-      255,255,255,255, 255,255,255,255,
-      0,0,0,0, 0,0,0,0,
-      255,255,255,255, 255,255,255,255,
-      0,0,0,0, 0,0,0,0
-    ])
-  });
-
-  initUI();
-  loadCurrentDate();
-  map.addControl(new maplibregl.NavigationControl());
+  console.error("Ошибка карты:", e.error);
 });
 </script>
 </body>
 </html>
+
